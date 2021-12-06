@@ -12,4 +12,4 @@ main = do
     let g0l = read ('[':i++"]") :: [Int]
     let g0 = foldl readIt (replicate 9 0) g0l :: [Integer]
     let g = g0 : map fish g
-    putStrLn $ show $ sum $ g !! 80
+    putStrLn $ show $ sum $ g !! 256
