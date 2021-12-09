@@ -1,19 +1,17 @@
 import Data.List
 import Data.Char
 
-cmpL :: [[Char]] -> [[Bool]]
+cmpL, cmpR, cmpU, cmpD :: [[Char]] -> [[Bool]]
+
 cmpL rs = zipWith cmpLr rs rs where
     cmpLr xs ys = (zipWith (<) xs (tail ys)) ++ [True]
 
-cmpR :: [[Char]] -> [[Bool]]
 cmpR rs = zipWith cmpRr rs rs where
     cmpRr xs ys = True : (zipWith (<) (tail xs) ys)
 
-cmpU :: [[Char]] -> [[Bool]]
 cmpU xs = (zipWith (zipWith (<)) xs (tail xs)) ++ [replicate l True] where
     l = length $ head xs
 
-cmpD :: [[Char]] -> [[Bool]]
 cmpD xs = replicate l True : (zipWith (zipWith (<)) (tail xs) xs) where
     l = length $ head xs
 
