@@ -41,7 +41,7 @@ addDist :: Array Point Int -> Point ->
                 DistanceMap -> Point -> DistanceMap
 addDist a current distances p =
     M.insert p (dist (minimum [distances `at` p,
-                         D (dist (distances `at` current) + a `risk` p)])) distances
+                      D (dist (distances `at` current) + a `risk` p)])) distances
 
 compareDist :: DistanceMap -> Point -> Point -> Ordering
 compareDist d a b = compare (d `at` a) (d `at` b)
@@ -60,7 +60,8 @@ dijkstra3 a unvisited distances current =
         distances' = foldl' (addDist a current) distances unvisitedNeighbors
         unvisited' = S.delete current unvisited
         distances'' = M.delete current distances'
-    in if current == (fiveFold bottom, fiveFold right) then dist $ distances' `at` current
+    in if current == (fiveFold bottom, fiveFold right)
+        then dist $ distances' `at` current
         else dijkstra3 a unvisited' distances'' $ smallestDist distances''
 
 main = do
