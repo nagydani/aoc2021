@@ -40,8 +40,9 @@ dijkstra a =
 addDist :: Array Point Int -> Point -> 
                 DistanceMap -> Point -> DistanceMap
 addDist a current distances p =
-    M.insert p (dist (minimum [distances `at` p,
-                      D (dist (distances `at` current) + a `risk` p)])) distances
+    let d = minimum [distances `at` p,
+                     D (dist (distances `at` current) + a `risk` p)]
+    in M.insert p (dist d) distances
 
 compareDist :: DistanceMap -> Point -> Point -> Ordering
 compareDist d a b = compare (d `at` a) (d `at` b)
