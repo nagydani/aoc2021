@@ -1,15 +1,19 @@
 import Text.Parsec
 import Text.Parsec.String (Parser)
-import Data.Char
 import Data.Maybe
 import Data.List
+import Control.Monad
 
 data SF = RN Int | Pair SF SF deriving (Show, Eq)
 
+prettyShow :: SF -> String
+prettyShow (RN n) = show n
+prettyShow (Pair l r) = '[' : prettyShow l ++ ',' : prettyShow r ++ "]"
+
 rn :: Parser SF
 rn = do
-    d <- digit
-    return $ RN (digitToInt d)
+    d <- many1 digit
+    return $ RN (read d)
 
 pair :: Parser SF
 pair = do
@@ -25,6 +29,9 @@ sf = rn <|> pair
 
 readIt :: Either a b -> b
 readIt (Right x) = x
+
+prettyRead :: String -> SF
+prettyRead xs = readIt $ parse sf "" xs
 
 mag :: SF -> Int
 mag (RN n) = n
@@ -70,7 +77,7 @@ rnL (Pair l r, ts) = rnL (l, (L r):ts)
 
 rnR :: Zipper -> Zipper
 rnR (RN n, ts) = (RN n, ts)
-rnR (Pair l r, ts) = rnL (r, (R l):ts)
+rnR (Pair l r, ts) = rnR (r, (R l):ts)
 
 rnToLeft :: Zipper -> Maybe Zipper
 rnToLeft (_, []) = Nothing
@@ -97,7 +104,7 @@ explode a =
                  rre = do
                      (e, ets) <- rnToRight (RN 0, ts')
                      return $ getSF (RN (mag e + r), ets)
-             in replace d rre
+             in replace (getSF (RN 0, ts')) rre
 
 big :: Zipper -> Maybe Zipper
 big (RN n, ts)
@@ -128,12 +135,21 @@ reduce a =
             then reduce a''
             else a
 
+debug :: SF -> IO ()
+debug a = do
+    putStrLn $ prettyShow $ a
+    let a' = explode a
+    unless (a == a') (debug a')
+    let a'' = split a
+    unless (a == a'') (debug a'')
+
 add :: SF -> SF -> SF
 add a b = reduce $ Pair a b
 
 main = do
     f <- readFile "input18.txt"
     let ls = lines f
-    let sfs = map (\x -> readIt $ parse sf "" x) ls
+    let sfs = map prettyRead ls
     let sumSF = foldl1' add sfs
+    putStrLn $ prettyShow sumSF
     putStrLn $ show $ mag sumSF
