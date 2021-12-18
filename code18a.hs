@@ -2,6 +2,7 @@ import Text.Parsec
 import Text.Parsec.String (Parser)
 import Data.Char
 import Data.Maybe
+import Data.List
 
 data SF = RN Int | Pair SF SF deriving (Show, Eq)
 
@@ -127,3 +128,12 @@ reduce a =
             then reduce a''
             else a
 
+add :: SF -> SF -> SF
+add a b = reduce $ Pair a b
+
+main = do
+    f <- readFile "input18.txt"
+    let ls = lines f
+    let sfs = map (\x -> readIt $ parse sf "" x) ls
+    let sumSF = foldl1' add sfs
+    putStrLn $ show $ mag sumSF
