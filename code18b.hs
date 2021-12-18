@@ -125,9 +125,15 @@ reduce a =
 add :: SF -> SF -> SF
 add a b = reduce $ Pair a b
 
+magSum :: [SF] -> [Int]
+magSum sfs = do
+    a <- sfs
+    b <- sfs
+    guard $ a /= b
+    return $ mag $ add a b
+
 main = do
     f <- readFile "input18.txt"
     let ls = lines f
     let sfs = map prettyRead ls
-    let sumSF = foldl1' add sfs
-    putStrLn $ show $ mag sumSF
+    putStrLn $ show $ maximum $ magSum sfs
