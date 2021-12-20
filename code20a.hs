@@ -34,8 +34,8 @@ update :: Algo -> Grid -> Point -> (S.Set Point -> S.Set Point)
 update a g p =
     let i = fst g
     in if a ! (hood g p)
-        then if i then id else S.insert p
-        else if i then S.insert p else id
+        then if i then S.insert p else id
+        else if i then id else S.insert p
 
 scope :: S.Set Point -> S.Set Point
 scope = S.fromList . concatMap neighbors . S.toList
