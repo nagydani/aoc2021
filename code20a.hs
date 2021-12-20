@@ -34,8 +34,8 @@ update :: Algo -> Grid -> Point -> (S.Set Point -> S.Set Point)
 update a g p =
     let i = fst g
     in if a ! (hood g p)
-        then if i then S.delete p else S.insert p
-        else if i then S.insert p else S.delete p
+        then if i then id else S.insert p
+        else if i then S.insert p else id
 
 scope :: S.Set Point -> S.Set Point
 scope = S.fromList . concatMap neighbors . S.toList
@@ -45,8 +45,8 @@ step a (i, g) =
     let s = S.toList $ scope g :: [Point]
         us = map (update a (i, g)) s :: [S.Set Point -> S.Set Point]
     in if a ! 0
-        then (not i, (foldl1' (.) us) g)
-        else (i, (foldl1' (.) us) g)
+        then (not i, (foldl1' (.) us) S.empty)
+        else (i, (foldl1' (.) us) S.empty)
 
 main = do
     f <- readFile "input20.txt"
