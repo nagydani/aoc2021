@@ -49,8 +49,8 @@ readIt :: Either a [b] -> [b]
 readIt (Left _) = []
 readIt (Right xs) = xs
 
-intersect :: Range -> Range -> Bool
-intersect (al, ah) (bl, bh) =
+isect :: Range -> Range -> Bool
+isect (al, ah) (bl, bh) =
     bl <= ah && al <= bh
 
 type Delimit = (I.IntSet, I.IntSet, I.IntSet)
@@ -92,19 +92,55 @@ rebootStep (ax, ay, az) (sw, rx, ry, rz) =
 reboot :: CMap -> [Cuboid] -> (S.Set Point -> S.Set Point)
 reboot cm cs = foldl1' (flip (.)) (map (rebootStep cm) cs)
 
-volume :: CMap -> Point -> Integer
-volume (ax, ay, az) (x, y, z) =
-    let xr = fromIntegral (ax!(x + 1) - ax!x)
-        yr = fromIntegral (ay!(y + 1) - ay!y)
-        zr = fromIntegral (az!(z + 1) - az!z)
-    in xr * yr * zr
+oCuboid :: CMap -> Point -> Cuboid
+oCuboid (ax, ay, az) (x, y, z) =
+    let xr = (ax!x, ax!(x + 1) - 1)
+        yr = (ay!y, ay!(y + 1) - 1)
+        zr = (az!z, az!(z + 1) - 1)
+    in (True, xr, yr, zr)
+
+addCuboid :: [Cuboid] -> Cuboid -> [Cuboid]
+addCuboid cs (True, rx, ry, rz) =
+    let (is, ds) = partition
+            (\(_, rx', ry', rz')
+                -> isect rx rx' && isect ry ry' && isect rz rz') cs
+    in if null is
+        then (True, rx, ry, rz) : ds
+        else let cs = is ++ [(True, rx, ry, rz)]
+                 (xs, ys, zs) = foldr delimit (I.empty, I.empty, I.empty) cs
+                 cm = ( listArray (1, I.size xs) $ I.toAscList xs
+                      , listArray (1, I.size ys) $ I.toAscList ys
+                      , listArray (1, I.size zs) $ I.toAscList zs )
+                 sc = (reboot cm cs) S.empty
+                 is' = map (oCuboid cm) (S.toList sc)
+             in ds ++ is'
+
+subCuboid :: [Cuboid] -> Cuboid -> [Cuboid]
+subCuboid cs (False, rx, ry, rz) =
+    let (is, ds) = partition
+            (\(_, rx', ry', rz')
+                -> isect rx rx' && isect ry ry' && isect rz rz') cs
+    in if null is
+        then ds
+        else let cs = is ++ [(False, rx, ry, rz)]
+                 (xs, ys, zs) = foldr delimit (I.empty, I.empty, I.empty) cs
+                 cm = ( listArray (1, I.size xs) $ I.toAscList xs
+                      , listArray (1, I.size ys) $ I.toAscList ys
+                      , listArray (1, I.size zs) $ I.toAscList zs )
+                 sc = (reboot cm cs) S.empty
+                 is' = map (oCuboid cm) (S.toList sc)
+             in ds ++ is'
+
+mergeCuboid :: [Cuboid] -> Cuboid -> [Cuboid]
+mergeCuboid cs (t, rx, ry, rz) =
+    (if t then addCuboid else subCuboid) cs (t, rx, ry, rz)
+
+volume :: Cuboid -> Integer
+volume (True, rx, ry, rz) = l rx * l ry * l rz
+    where l (l, h) = fromIntegral (h + 1 - l)
 
 main = do
     f <- readFile "input22.txt"
     let cs = readIt $ parse puzzle "" f
-    let (xs, ys, zs) = foldr delimit (I.empty, I.empty, I.empty) cs
-    let cm = ( listArray (1, I.size xs) $ I.toAscList xs
-             , listArray (1, I.size ys) $ I.toAscList ys
-             , listArray (1, I.size zs) $ I.toAscList zs )
-    let sc = (reboot cm cs) S.empty
-    putStrLn $ show $ sum $ map (volume cm) (S.toList sc)
+        cds = foldl' mergeCuboid [] cs
+    putStrLn $ show $ sum $ map volume cds
