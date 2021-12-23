@@ -9,7 +9,7 @@ type DistanceMap = M.Map Cave Int
 data Distance = D Int | Infty deriving (Eq, Ord)
 
 start :: Cave
-start = [[(2,2),(2,8)],[(1,2),(1,6)],[(1,4),(2,6)],[(1,8),(2,4)]]
+start = [[(1,4),(2,8)],[(1,2),(1,6)],[(1,8),(2,2)],[(2,4),(2,6)]]
 
 final :: Cave
 final = [[(1,2),(2,2)],[(1,4),(2,4)],[(1,6),(2,6)],[(1,8),(2,8)]]
