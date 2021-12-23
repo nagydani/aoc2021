@@ -5,7 +5,7 @@ import Control.Monad
 
 type Point = (Int, Int)
 type Cave = [[Point]]
-type DistanceMap = M.Map Cave Int
+type DistanceMap = (M.Map Cave Int, S.Set (Int, Cave))
 data Distance = D Int | Infty deriving (Eq, Ord)
 
 start :: Cave
@@ -55,24 +55,28 @@ moves ps = do
     return (final, cost)
 
 (!) :: DistanceMap -> Cave -> Distance
-m ! p = if M.member p m then D (m M.! p) else Infty
+(m, _) ! p = if M.member p m then D (m M.! p) else Infty
 
 dist :: Distance -> Int
 dist (D x) = x
 
+del :: Cave -> DistanceMap -> DistanceMap
+del p (distances, ordering) =
+    if M.notMember p distances
+        then (distances, ordering)
+        else (M.delete p distances, S.delete (distances M.! p, p) ordering)
+
 addDist :: Cave -> DistanceMap -> (Cave, Int) -> DistanceMap
-addDist current distances (p, d) =
-    let tent = distances ! p
+addDist current (distances, ordering) (p, d) =
+    let tent = (distances, ordering) ! p
         tent' = D ((distances M.! current) + d)
         m = dist $ minimum [tent, tent']
-    in M.insert p m distances
-
-compareDist :: DistanceMap -> Cave -> Cave -> Ordering
-compareDist d a b = compare (d ! a) (d ! b)
+    in if M.member p distances
+        then (M.insert p m distances, S.insert (m, p) $ S.delete (distances M.! p, p) ordering)
+        else (M.insert p m distances, S.insert (m, p) ordering)
 
 smallestDist :: DistanceMap -> Cave
-smallestDist distances =
-    minimumBy (compareDist distances) (M.keys distances)
+smallestDist (_, ordering) = snd $ S.findMin ordering
 
 dijkstra :: S.Set Cave -> DistanceMap -> Cave -> Int
 dijkstra visited distances current =
@@ -80,10 +84,10 @@ dijkstra visited distances current =
                              moves current
         distances' = foldl' (addDist current) distances unvisitedNeighbors
         visited' = S.insert current visited
-        distances'' = M.delete current distances'
+        distances'' = del current distances'
     in if current == final
         then dist $ distances' ! current
         else dijkstra visited' distances'' $ smallestDist distances''
 
 main = do
-    putStrLn $ show $ dijkstra S.empty (M.singleton start 0) start
+    putStrLn $ show $ dijkstra S.empty (M.singleton start 0, S.singleton (0, start) ) start
