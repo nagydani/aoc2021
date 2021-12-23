@@ -1,23 +1,30 @@
 import Data.List
+import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Control.Monad
 
 type Point = (Int, Int)
+type Cave = [[Point]]
+type DistanceMap = M.Map Cave Int
+data Distance = D Int | Infty deriving (Eq, Ord)
 
-start :: [[Point]]
+start :: Cave
 start = [[(2,2),(2,8)],[(1,2),(1,6)],[(1,4),(2,6)],[(1,8),(2,4)]]
 
-occupied :: [[Point]] -> Point -> Bool
+final :: Cave
+final = [[(1,2),(2,2)],[(1,4),(2,4)],[(1,6),(2,6)],[(1,8),(2,8)]]
+
+occupied :: Cave -> Point -> Bool
 occupied ps p = not $ null $ elemIndices p $ concat ps
 
-blocked :: [[Point]] -> [Int] -> Bool
+blocked :: Cave -> [Int] -> Bool
 blocked ps is = or $ map (\x -> occupied ps (0, x)) is
     
 manhattan :: Point -> Point -> Int
 manhattan (y1, x1) (y2, x2) =
     abs (y2 - y1) + abs (x2 - x1)
     
-moves :: [[Point]] -> [([[Point]], Int)]
+moves :: Cave -> [(Cave, Int)]
 moves ps = do
     label <- [0..3]
     num <- [0..1]
@@ -46,3 +53,37 @@ moves ps = do
                 sort [(y', x'), (ps !! label) !! (1 - num)] :
                 (drop (succ label) ps)
     return (final, cost)
+
+(!) :: DistanceMap -> Cave -> Distance
+m ! p = if M.member p m then D (m M.! p) else Infty
+
+dist :: Distance -> Int
+dist (D x) = x
+
+addDist :: Cave -> DistanceMap -> (Cave, Int) -> DistanceMap
+addDist current distances (p, d) =
+    let tent = distances ! p
+        tent' = D ((distances M.! current) + d)
+        m = dist $ minimum [tent, tent']
+    in M.insert p m distances
+
+compareDist :: DistanceMap -> Cave -> Cave -> Ordering
+compareDist d a b = compare (d ! a) (d ! b)
+
+smallestDist :: DistanceMap -> Cave
+smallestDist distances =
+    minimumBy (compareDist distances) (M.keys distances)
+
+dijkstra :: S.Set Cave -> DistanceMap -> Cave -> Int
+dijkstra visited distances current =
+    let unvisitedNeighbors = filter (\(x,_) -> S.notMember x visited) $
+                             moves current
+        distances' = foldl' (addDist current) distances unvisitedNeighbors
+        visited' = S.insert current visited
+        distances'' = M.delete current distances'
+    in if current == final
+        then dist $ distances' ! current
+        else dijkstra visited' distances'' $ smallestDist distances''
+
+main = do
+    putStrLn $ show $ dijkstra S.empty (M.singleton start 0) start
